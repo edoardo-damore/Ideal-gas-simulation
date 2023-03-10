@@ -222,9 +222,9 @@ void forzaLennardJones (int N, int i, int j,
                            pow(coordinateY[i] - coordinateY[j], 2) + 
                            pow(coordinateZ[i] - coordinateZ[j], 2));
 
-    forzaLJ[0] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateX[i] - coordinateX[j]); 
-    forzaLJ[1] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateY[i] - coordinateY[j]); 
-    forzaLJ[2] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateZ[i] - coordinateZ[j]); 
+    forzaLJ[0] = 24. * epsilonArgon/distanza * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateX[i] - coordinateX[j])/fabs(coordinateX[i] - coordinateX[j]); 
+    forzaLJ[1] = 24. * epsilonArgon/distanza * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateY[i] - coordinateY[j])/fabs(coordinateY[i] - coordinateY[j]); 
+    forzaLJ[2] = 24. * epsilonArgon/distanza * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateZ[i] - coordinateZ[j])/fabs(coordinateZ[i] - coordinateZ[j]); 
 
     return;
 }
@@ -367,7 +367,7 @@ int main()
     double volume = rangeX * rangeY * rangeZ;
 
     double massa = UMA * numeroMassaArgon;
-    double dt = 1e-6;
+    double dt = 1e-4;
     int numeroIterazioni;
 
     double offsetV = -1e2, rangeV = 2e2;
@@ -377,6 +377,10 @@ int main()
     cout << "Inserire il numero di iterazioni: ";
     cin >> numeroIterazioni;
 
+    int N;
+
+    cout << "Inserire il numero di punti da generare: ";
+    cin >> N;
 
     cout << "Inserire i seed per le tre coordinate: "; 
     cin >> seedX >> seedY >> seedZ;
@@ -384,10 +388,6 @@ int main()
     cout << "Inserire i seed per le velocità: ";
     cin >> seedVX >> seedVY >> seedVZ;
 
-    int N;
-
-    cout << "Inserire il numero di punti da generare: ";
-    cin >> N;
 
     //generazione casuale delle posizioni e delle velocità iniziali
 
@@ -409,6 +409,7 @@ int main()
 
     int iterazioneAttuale = 0;
 
+
     while (iterazioneAttuale < numeroIterazioni)
     {
 
@@ -421,6 +422,17 @@ int main()
                            velocityX, velocityY, velocityZ, 
                            offsetX, offsetY, offsetZ, 
                            rangeX, rangeY, rangeZ);
+
+        ofstream file ("iterazioni/" + to_string(iterazioneAttuale + 1) + ".txt");
+
+        file << "x\ty\tz" << endl;
+
+        for (int i = 0; i < N; i++)
+        {
+            file << coordinateX[i] << '\t' << coordinateY[i] << '\t' << coordinateZ[i] << endl;   
+        }
+        
+        file.close();
 
         iterazioneAttuale++;      
     }

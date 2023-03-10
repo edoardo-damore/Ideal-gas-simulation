@@ -3,8 +3,7 @@ import pandas as pd
 import matplotlib.animation as animation
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
-import PIL.Image as image
-import array
+
 
 print("Quante iterazioni sono state fatte? ")
 numeroIterazioni = int(input())
@@ -30,36 +29,25 @@ for i in range(numeroIterazioni):
 fig = plt.figure()
 ax = fig.add_subplot(projection="3d")
 
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_zlabel("Z")
-
 
 def animate(i):
+
+    plt.cla()
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+
+    ax.set_xlim(0, 0.01)
+    ax.set_ylim(0, 0.01)
+    ax.set_zlim(0, 0.01)
 
     for j in range(numeroParticelle):
         ax.scatter(iterations[i][j][0], iterations[i][j][1], iterations[i][j][2], color='blue')
 
 
-anim = FuncAnimation(fig, animate, interval=100, repeat=False)
+anim = FuncAnimation(fig, animate, interval=1000, repeat=False)
 
-writergif = animation.PillowWriter(fps=30)
+writergif = animation.PillowWriter(fps=5)
 
 anim.save("animation.gif", writer=writergif)
-
-
-
-
-#for j in range(numeroIterazioni):
-#    for i in range(numeroParticelle):
-#
-#        ax.scatter(iterations[j][i][0], iterations[j][i][1], iterations[j][i][2], color='blue')
-#
-#    fig.savefig(f"frames/{j}.png", dpi='figure', format='png')
-#
-#images = []
-#
-#for i in range(numeroIterazioni):
-#    images.append(image.open(f"frames/{i}.png"))
-#
-#images[0].save("prova.gif", save_all=True, append_images=images[1:], optimize=False, duration=numeroIterazioni, loop=0)

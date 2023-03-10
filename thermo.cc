@@ -367,7 +367,7 @@ int main()
     double volume = rangeX * rangeY * rangeZ;
 
     double massa = UMA * numeroMassaArgon;
-    double dt = 1e-4;
+    double dt = 1e-6;
     int numeroIterazioni;
 
     double offsetV = -1e2, rangeV = 2e2;
@@ -403,9 +403,9 @@ int main()
     double* velocityY = new double[N];
     double* velocityZ = new double[N];
 
-    metropolisVelocity(seedVX, modulo, a, N, massa, offsetV, rangeV, velocityX);
-    metropolisVelocity(seedVY, modulo, a, N, massa, offsetV, rangeV, velocityY);
-    metropolisVelocity(seedVZ, modulo, a, N, massa, offsetV, rangeV, velocityZ);
+    metropolis(seedVX, modulo, a, N, offsetV, rangeV, velocityX);
+    metropolis(seedVY, modulo, a, N, offsetV, rangeV, velocityY);
+    metropolis(seedVZ, modulo, a, N, offsetV, rangeV, velocityZ);
 
     int iterazioneAttuale = 0;
 

@@ -22,7 +22,8 @@ void debug(double prova)
 
 double prob_non_normalizzata (double x)
 {
-    return x * (1 - x) + 1;
+    //return x * (1 - x) + 1;
+    return 1;
 }
 
 double distribuzioneMaxwellBoltzmann (double v, double massa)
@@ -191,11 +192,9 @@ double energiaTotale (int N, double massa,
 
             double distanza = sqrt(pow(coordinateX[i] - coordinateX[j],2) + pow(coordinateY[i] - coordinateY[j],2) + pow(coordinateZ[i] - coordinateZ[j],2) );
         
-            potenzialeLennardJones += pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6);
+            potenzialeLennardJones += 4 * epsilonArgon * (pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6));
         }
     }
-
-    potenzialeLennardJones *= 4 * epsilonArgon;
 
     double energia = energiaCinetica + energiaPotenzialeGravitazionale + potenzialeLennardJones;
 
@@ -358,7 +357,7 @@ int main()
     long seedVX, seedVY, seedVZ;
     long modulo = 2147483647, a = 16807;
 
-    double offset = 0., range = 1.e-3; 
+    double offset = 0., range = 1.e-2; 
 
     double offsetX = offset, offsetY = offset, offsetZ = offset;
     double rangeX = range, rangeY = range, rangeZ = range;
@@ -371,7 +370,7 @@ int main()
     double dt = 1e-6;
     int numeroIterazioni;
 
-    double offsetV = -1, rangeV = 2;
+    double offsetV = -1e2, rangeV = 2e2;
 
     //cout << "Inserire l'intervallo di tempo minimo: ";
     //cin >> dt;

@@ -133,7 +133,7 @@ void motoVelocityVerlet(int N, double dt, double massa, double volume,
                         double rangeX, double rangeY, double rangeZ)
 {
 
-    //print(N, volume, massa, velocityX, velocityY, velocityZ); //stampa a schermo la legge dei gas ideali
+    print(N, volume, massa, velocityX, velocityY, velocityZ); //stampa a schermo la legge dei gas ideali
 
 
     //array contenenti posizioni e velocità all'istante n+1
@@ -294,7 +294,7 @@ int main()
     while (tempo < tempoMassimo)
     {
 
-        cout << coordinateX[0] << " " << coordinateY[0] << " " << coordinateZ[0] << endl;
+        //cout << coordinateX[0] << " " << coordinateY[0] << " " << coordinateZ[0] << endl;
 
         motoVelocityVerlet(N, dt, massa, volume, 
                            coordinateX, coordinateY, coordinateZ, 
@@ -302,14 +302,14 @@ int main()
                            offsetX, offsetY, offsetZ, 
                            rangeX, rangeY, rangeZ);
 
-        if (tempo == 0)
-        {
-            p0 = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        }
-        if (tempo == tempoMassimo - dt)
-        {
-            pf = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        }
+        //if (tempo == 0)
+        //{
+        //    p0 = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
+        //}
+        //if (tempo == tempoMassimo - dt)
+        //{
+        //    pf = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
+        //}
 
         tempo += dt;
     }

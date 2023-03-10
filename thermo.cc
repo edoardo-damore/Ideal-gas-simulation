@@ -4,6 +4,8 @@
 
 using namespace std;
 
+
+#define G 6.67e-11
 #define kB 1.380649e-23
 #define Na 6.02214129e23
 #define UMA 1.66054e-27 //kg
@@ -20,7 +22,13 @@ void debug(double prova)
 
 double prob_non_normalizzata (double x)
 {
-    return 1;
+    return x * (1 - x) + 1;
+}
+
+double distribuzioneMaxwellBoltzmann (double v, double massa)
+{
+    double temperatura = 100;
+    return sqrt(2/M_PI) * pow(massa, 1.5)/pow(kB * temperatura, 1.5) * v * v * exp(-massa * v * v/(2 * kB * temperatura));
 }
 
 //algoritmo di metropolis generante N punti casuali nel range [offset, offset + range] 
@@ -71,6 +79,52 @@ void metropolis (long seed, long modulo, long a, int N,
 
 }
 
+void metropolisVelocity (long seed, long modulo, long a, int N, double massa,
+                         double offset, double range, double* valoriGenerati)
+{
+
+    double valoreControllo;
+    double valoreTrial;
+
+    long numeroCasualeGrezzo = (a * seed) % modulo;
+    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
+
+    valoreControllo = numeroCasualeNormalizzato;
+
+
+    for (int i = 0; i < N; i++)
+    {
+        numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
+        numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+
+        valoreTrial = numeroCasualeNormalizzato;
+
+        if (distribuzioneMaxwellBoltzmann(valoreTrial, massa) > distribuzioneMaxwellBoltzmann(valoreControllo, massa))
+        {
+            valoreControllo = valoreTrial;
+            valoriGenerati[i] = valoreTrial * range + offset;
+        }
+        else 
+        {
+            numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
+            numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+
+            double rapporto = numeroCasualeNormalizzato;
+
+            if (distribuzioneMaxwellBoltzmann(valoreTrial, massa)/distribuzioneMaxwellBoltzmann(valoreControllo, massa) > rapporto)
+            {
+                valoreControllo = valoreTrial;
+                valoriGenerati[i] = valoreTrial * range + offset;
+            }
+            else
+            {
+                valoriGenerati[i] = valoreControllo * range + offset;
+            }
+        }
+
+    }
+}
+
 double pressione(int N, double volume, double massa, 
                  double* velocityX, double* velocityY, double* velocityZ)
 {
@@ -96,6 +150,56 @@ double temperatura (int N, double massa,
 
     return 1/((3 * N - 3) * kB) * massa * somma;
     
+}
+
+double energiaTotale (int N, double massa,
+                      double* coordinateX, double* coordinateY, double* coordinateZ,
+                      double* velocityX, double* velocityY, double* velocityZ)
+{
+    double sommaVelocity = 0;
+
+    for (int i = 0; i < N; i++)
+    {
+        sommaVelocity += pow(velocityX[i], 2) + pow(velocityY[i], 2) + pow(velocityZ[i], 2);
+    }
+
+    double energiaCinetica = 0.5 * massa * sommaVelocity;
+
+    double sommaDistanze = 0;
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (j==i) continue;
+
+            double distanza = sqrt(pow(coordinateX[i] - coordinateX[j],2) + pow(coordinateY[i] - coordinateY[j],2) + pow(coordinateZ[i] - coordinateZ[j],2) );
+            sommaDistanze += 1./distanza;
+        }
+    }
+    
+    double energiaPotenzialeGravitazionale = G * massa * massa * sommaDistanze;
+
+    double potenzialeLennardJones = 0;
+
+    
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (j==i) continue;
+
+            double distanza = sqrt(pow(coordinateX[i] - coordinateX[j],2) + pow(coordinateY[i] - coordinateY[j],2) + pow(coordinateZ[i] - coordinateZ[j],2) );
+        
+            potenzialeLennardJones += pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6);
+        }
+    }
+
+    potenzialeLennardJones *= 4 * epsilonArgon;
+
+    double energia = energiaCinetica + energiaPotenzialeGravitazionale + potenzialeLennardJones;
+
+    return energia;    
 }
 
 void print (int N, double volume, double massa,
@@ -126,6 +230,8 @@ void forzaLennardJones (int N, int i, int j,
     return;
 }
 
+int contatore = 0;
+
 void motoVelocityVerlet(int N, double dt, double massa, double volume,
                         double* coordinateX, double* coordinateY, double* coordinateZ,
                         double* velocityX, double* velocityY, double* velocityZ,
@@ -133,7 +239,15 @@ void motoVelocityVerlet(int N, double dt, double massa, double volume,
                         double rangeX, double rangeY, double rangeZ)
 {
 
-    //print(N, volume, massa, velocityX, velocityY, velocityZ); //stampa a schermo la legge dei gas ideali
+    double energia = energiaTotale(N, massa, coordinateX, coordinateY, coordinateZ, velocityX, velocityY, velocityZ);
+
+    contatore++;
+
+    cout << contatore << " ||| ";
+
+    cout << "Etot = " << energia << " ||| ";
+
+    print(N, volume, massa, velocityX, velocityY, velocityZ); //stampa a schermo la legge dei gas ideali
 
 
     //array contenenti posizioni e velocità all'istante n+1
@@ -244,7 +358,7 @@ int main()
     long seedVX, seedVY, seedVZ;
     long modulo = 2147483647, a = 16807;
 
-    double offset = 0., range = 1e-3; 
+    double offset = 0., range = 1.e-3; 
 
     double offsetX = offset, offsetY = offset, offsetZ = offset;
     double rangeX = range, rangeY = range, rangeZ = range;
@@ -255,8 +369,15 @@ int main()
 
     double massa = UMA * numeroMassaArgon;
     double dt = 1e-6;
+    int numeroIterazioni;
 
     double offsetV = -1, rangeV = 2;
+
+    //cout << "Inserire l'intervallo di tempo minimo: ";
+    //cin >> dt;
+    cout << "Inserire il numero di iterazioni: ";
+    cin >> numeroIterazioni;
+
 
     cout << "Inserire i seed per le tre coordinate: "; 
     cin >> seedX >> seedY >> seedZ;
@@ -283,18 +404,18 @@ int main()
     double* velocityY = new double[N];
     double* velocityZ = new double[N];
 
-    metropolis(seedVX, modulo, a, N, offsetV, rangeV, velocityX);
-    metropolis(seedVY, modulo, a, N, offsetV, rangeV, velocityY);
-    metropolis(seedVZ, modulo, a, N, offsetV, rangeV, velocityZ);
+    metropolisVelocity(seedVX, modulo, a, N, massa, offsetV, rangeV, velocityX);
+    metropolisVelocity(seedVY, modulo, a, N, massa, offsetV, rangeV, velocityY);
+    metropolisVelocity(seedVZ, modulo, a, N, massa, offsetV, rangeV, velocityZ);
 
-    double tempo = 0, tempoMassimo = 1;
+    int iterazioneAttuale = 0;
 
-    double p0 = 0, pf = 0;
-
-    while (tempo < tempoMassimo)
+    while (iterazioneAttuale < numeroIterazioni)
     {
 
-        cout << coordinateX[0] << " " << coordinateY[0] << " " << coordinateZ[0] << endl;
+        //cout << coordinateX[0] << " " << coordinateY[0] << " " << coordinateZ[0] << endl;
+        //cout << velocityX[0] << " " << velocityY[0] << " " << velocityZ[0] << endl;
+        //cout << endl; 
 
         motoVelocityVerlet(N, dt, massa, volume, 
                            coordinateX, coordinateY, coordinateZ, 
@@ -302,19 +423,8 @@ int main()
                            offsetX, offsetY, offsetZ, 
                            rangeX, rangeY, rangeZ);
 
-        if (tempo == 0)
-        {
-            p0 = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        }
-        if (tempo == tempoMassimo - dt)
-        {
-            pf = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        }
-
-        tempo += dt;
+        iterazioneAttuale++;      
     }
-
-    cout << "Pressione iniziale: " << p0 << " | Pressione finale: " << pf << endl;
 
     delete [] coordinateX;
     delete [] coordinateY;

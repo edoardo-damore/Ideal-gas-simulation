@@ -16,11 +16,6 @@ using namespace std;
 
 bool interazioneParticelle = false;
 
-void debug(double prova)
-{
-    cout << prova << endl;
-    return;
-}
 
 double distribuzioneCoordinate (double x)
 {
@@ -338,13 +333,6 @@ void motoVelocityVerlet(int N, double dt, double massa, double volume,
                         double offsetX, double offsetY, double offsetZ,
                         double rangeX, double rangeY, double rangeZ)
 {
-<<<<<<< HEAD
-
-    print(N, volume, massa, velocityX, velocityY, velocityZ); //stampa a schermo la legge dei gas ideali
-
-
-=======
->>>>>>> energia
     //array contenenti posizioni e velocità all'istante n+1
     double* futureX = new double[N]; 
     double* futureY = new double[N]; 
@@ -520,9 +508,6 @@ int main()
 
     ofstream fileOutput;
 
-<<<<<<< HEAD
-        //cout << coordinateX[0] << " " << coordinateY[0] << " " << coordinateZ[0] << endl;
-=======
     if (interazioneParticelle) fileOutput.open("outputInterazione.txt");
     else fileOutput.open("outputNoInterazione.txt");
 
@@ -531,29 +516,14 @@ int main()
     while (iterazioneAttuale < numeroIterazioni)
     {
         print(N, volume, massa, iterazioneAttuale, coordinateX, coordinateY, coordinateZ, velocityX, velocityY, velocityZ, fileOutput);
->>>>>>> energia
 
         motoVelocityVerlet(N, dt, massa, volume, 
                            coordinateX, coordinateY, coordinateZ, 
                            velocityX, velocityY, velocityZ, 
                            offsetX, offsetY, offsetZ, 
                            rangeX, rangeY, rangeZ);
-<<<<<<< HEAD
-
-        //if (tempo == 0)
-        //{
-        //    p0 = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        //}
-        //if (tempo == tempoMassimo - dt)
-        //{
-        //    pf = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-        //}
-
-        tempo += dt;
-=======
         
         iterazioneAttuale++;      
->>>>>>> energia
     }
 
     fileOutput.close();

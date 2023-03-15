@@ -454,9 +454,9 @@ int main()
     double volume = rangeX * rangeY * rangeZ;
 
     double massa = UMA * numeroMassaArgon;
-    double dt = 1e-3;
+    double dt = 1e-4;
 
-    double offsetV = -1e-1, rangeV = 2e-1;
+    double offsetV = -1e0, rangeV = 2e0;
 
     char configurazione;
 

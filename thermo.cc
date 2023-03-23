@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <string>
 
 using namespace std;
 
@@ -14,444 +15,53 @@ using namespace std;
 #define numeroMassaArgon 39.948
 //sono stati scelti i parametri dell'argon per simulare il gas ideale
 
+long modulo = 2147483647, a = 16807;
+double massa = UMA * numeroMassaArgon;
 bool interazioneParticelle = false;
 
-
-double distribuzioneCoordinate (double x)
+void debug (double x)
 {
-    return 1;
-}
-
-double distribuzioneVelocity (double v)
-{
-    return 1;
-}
-
-//algoritmo di metropolis generante N punti casuali nel range [offset, offset + range] 
-void metropolisCoordinate (long seed, long modulo, long a, int N, 
-                           double offset, double range, double* valoriGenerati)
-{
-
-    double valoreControllo;
-    double valoreTrial;
-
-    long numeroCasualeGrezzo = (a * seed) % modulo;
-    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
-
-    valoreControllo = numeroCasualeNormalizzato;
-
-
-    for (int i = 0; i < N; i++)
-    {
-        numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-        numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-
-        valoreTrial = numeroCasualeNormalizzato;
-
-        if (distribuzioneCoordinate(valoreTrial) > distribuzioneCoordinate(valoreControllo))
-        {
-            valoreControllo = valoreTrial;
-            valoriGenerati[i] = valoreTrial * range + offset;
-        }
-        else 
-        {
-            numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-            numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-
-            double rapporto = numeroCasualeNormalizzato;
-
-            if (distribuzioneCoordinate(valoreTrial)/distribuzioneCoordinate(valoreControllo) > rapporto)
-            {
-                valoreControllo = valoreTrial;
-                valoriGenerati[i] = valoreTrial * range + offset;
-            }
-            else
-            {
-                valoriGenerati[i] = valoreControllo * range + offset;
-            }
-        }
-
-    }
-
+    cout << x << endl;
     return;
 }
 
-void metropolisVelocity (long seed, long modulo, long a, int N,
-                         double offset, double range, double* valoriGenerati)
-{
+double distribuzioneCoordinate (double x);
 
-    double valoreControllo;
-    double valoreTrial;
+double distribuzioneMaxwellBoltzmann (double temperature, double moduloVelocity);
 
-    long numeroCasualeGrezzo = (a * seed) % modulo;
-    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
+void metropolisPosizioni (long seed, int N, double lato, double** valoriGenerati);
 
-    valoreControllo = numeroCasualeNormalizzato;
+void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato);
 
+void generazioneVelocity (long seed, int N, double temperatura, double** velocity);
 
-    for (int i = 0; i < N; i++)
-    {
-        numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-        numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+void forzaLennardJones (int N, int i, double** posizioni, double* forza);
 
-        valoreTrial = numeroCasualeNormalizzato;
+void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, double** velocity);
 
-        if (distribuzioneVelocity(valoreTrial) > distribuzioneVelocity(valoreControllo))
-        {
-            valoreControllo = valoreTrial;
-            valoriGenerati[i] = valoreTrial * range + offset;
-        }
-        else 
-        {
-            numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-            numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+void differenceCheck (long seed, int N, double lato, double** posizioni);
 
-            double rapporto = numeroCasualeNormalizzato;
+double funzioneDistanza (int N, int i, int j, double** posizioni);
 
-            if (distribuzioneVelocity(valoreTrial)/distribuzioneVelocity(valoreControllo) > rapporto)
-            {
-                valoreControllo = valoreTrial;
-                valoriGenerati[i] = valoreTrial * range + offset;
-            }
-            else
-            {
-                valoriGenerati[i] = valoreControllo * range + offset;
-            }
-        }
+double moduloQuadro (int N, double** velocity);
 
-    }
+double funzionePressione (int N, double volume, double** velocity);
 
-    return;
-}
+double funzioneTemperatura (int N, double** velocity);
 
-int counter = 1;
+double funzioneEnergia (int N, double** posizioni, double** velocity);
 
-void metropolisSingolo (long seed, long modulo, long a, 
-                        double offset, double range, double &valoreSingolo)
-{
-    seed += counter;
-    counter++;
+void print (int N, int iterazioneAttuale, string path, double** elementi);
 
-    double valoreControllo;
-    double valoreTrial;
+void printRisultati (int N, int iterazioneAttuale, ofstream &fileRisultati, double volume, double** posizioni, double** velocity);
 
-    long numeroCasualeGrezzo = (a * seed) % modulo;
-    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
-
-    valoreControllo = numeroCasualeNormalizzato;
-
-    numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-    numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-
-    valoreTrial = numeroCasualeNormalizzato;
-    
-    if (distribuzioneCoordinate(valoreTrial) > distribuzioneCoordinate(valoreControllo))
-    {
-        valoreControllo = valoreTrial;
-        valoreSingolo = valoreTrial * range + offset;
-    }
-    else 
-    {
-        numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-        numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-    
-        double rapporto = numeroCasualeNormalizzato;
-    
-        if (distribuzioneCoordinate(valoreTrial)/distribuzioneCoordinate(valoreControllo) > rapporto)
-        {
-            valoreControllo = valoreTrial;
-            valoreSingolo = valoreTrial * range + offset;
-        }
-        else
-        {
-            valoreSingolo = valoreControllo * range + offset;
-        }
-    }
-
-    return;
-}
-
-void differenceCheck (long seedX, long seedY, long seedZ, long modulo, long a, int N,
-                      double offsetX, double offsetY, double offsetZ, 
-                      double rangeX, double rangeY, double rangeZ,
-                      double* coordinateX, double* coordinateY, double* coordinateZ)
-{
-    for (int i = 0; i < N; i++)
-    {
-        for(int j = 0; j < N; j++)
-        {
-            if (i==j) continue;
-
-            if ((coordinateX[i]==coordinateX[j]) and (coordinateY[i]==coordinateY[j]) and (coordinateZ[i]==coordinateZ[j]))
-            {
-                metropolisSingolo(seedX, modulo, a, offsetX, rangeX, coordinateX[i]);
-                metropolisSingolo(seedY, modulo, a, offsetY, rangeY, coordinateY[i]);
-                metropolisSingolo(seedZ, modulo, a, offsetZ, rangeZ, coordinateZ[i]);
-                j--;
-            }
-        }
-    }
-
-    return;
-}
-
-double pressione(int N, double volume, double massa, 
-                 double* velocityX, double* velocityY, double* velocityZ)
-{
-    double somma = 0;
-
-    for (int i = 0; i < N; i++)
-    {
-        somma += pow(velocityX[i], 2) + pow(velocityY[i], 2) + pow(velocityZ[i], 2);
-    }
-
-    return 1/(3 * volume) * massa * somma;
-}
-
-double temperatura (int N, double massa,
-                    double* velocityX, double* velocityY, double* velocityZ)
-{
-    double somma = 0;
-
-    for (int i = 0; i < N; i++)
-    {
-        somma += pow(velocityX[i], 2) + pow(velocityY[i], 2) + pow(velocityZ[i], 2);
-    }
-
-    return 1/((3 * N - 3) * kB) * massa * somma;
-    
-}
-
-double energiaTotale (int N, double massa,
-                      double* coordinateX, double* coordinateY, double* coordinateZ,
-                      double* velocityX, double* velocityY, double* velocityZ)
-{
-    double sommaVelocity = 0;
-
-    for (int i = 0; i < N; i++)
-    {
-        sommaVelocity += pow(velocityX[i], 2) + pow(velocityY[i], 2) + pow(velocityZ[i], 2);
-    }
-
-    double energiaCinetica = 0.5 * massa * sommaVelocity;
-
-    double sommaDistanze = 0;
-
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            if (j==i) continue;
-
-            double distanza = sqrt(pow(coordinateX[i] - coordinateX[j],2) + pow(coordinateY[i] - coordinateY[j],2) + pow(coordinateZ[i] - coordinateZ[j],2) );
-            sommaDistanze += 1./distanza;
-        }
-    }
-    
-    double energiaPotenzialeGravitazionale = G * massa * massa * sommaDistanze;
-    energiaPotenzialeGravitazionale = 0;
-
-    double potenzialeLennardJones = 0;
- 
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            if (j==i) continue;
-
-            double distanza = sqrt(pow(coordinateX[i] - coordinateX[j],2) + pow(coordinateY[i] - coordinateY[j],2) + pow(coordinateZ[i] - coordinateZ[j],2) );
-        
-            potenzialeLennardJones += 4 * epsilonArgon * (pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6));
-        }
-    }
-
-    if (!interazioneParticelle) potenzialeLennardJones = 0;
-
-    double energia = energiaCinetica + energiaPotenzialeGravitazionale + potenzialeLennardJones;
-
-    return energia;    
-}
-
-void print (int N, double volume, double massa, int iterazioneAttuale,
-            double* coordinateX, double* coordinateY, double* coordinateZ,
-            double* velocityX, double* velocityY, double* velocityZ, 
-            ofstream &fileOutput)
-{
-    double p = pressione(N, volume, massa, velocityX, velocityY, velocityZ);
-    double T = temperatura(N, massa, velocityX, velocityY, velocityZ);
-    double energia = energiaTotale(N, massa, coordinateX, coordinateY, coordinateZ, velocityX, velocityY, velocityZ);
-
-    fileOutput << iterazioneAttuale << '\t' << energia << '\t' << p*volume << '\t' << N * kB * T << endl;  
-    
-    ofstream filePosizioni;
-    if (interazioneParticelle) filePosizioni.open(".coordinateInterazione/" + to_string(iterazioneAttuale) + ".txt");
-    else filePosizioni.open(".coordinateNoInterazione/" + to_string(iterazioneAttuale) +".txt");
-
-    filePosizioni << "x\ty\tz" << endl;
-    for (int i = 0; i < N; i++)
-    {
-        filePosizioni << coordinateX[i] << '\t' << coordinateY[i] << '\t' << coordinateZ[i] << endl;   
-    }
-    
-    filePosizioni.close();
-
-    ofstream fileVelocity;
-    if (interazioneParticelle) fileVelocity.open(".velocitàInterazione/" + to_string(iterazioneAttuale) + ".txt");
-    else fileVelocity.open(".velocitàNoInterazione/" + to_string(iterazioneAttuale) + ".txt");
-
-    fileVelocity << "Vx\tVy\tVz" << endl;
-    for (int i = 0; i < N; i++)
-    {
-        fileVelocity << velocityX[i] << '\t' << velocityY[i] << '\t' << velocityZ[i] << endl;
-    }
-    
-    fileVelocity.close();
-
-    return;
-}
-
-void forzaLennardJones (int N, int i, int j, 
-                        double* coordinateX, double* coordinateY, double* coordinateZ,
-                        double* forzaLJ)
-{
-    if(!interazioneParticelle) return;
-
-    double distanza = sqrt(pow(coordinateX[i] - coordinateX[j], 2) + 
-                           pow(coordinateY[i] - coordinateY[j], 2) + 
-                           pow(coordinateZ[i] - coordinateZ[j], 2));
-
-    forzaLJ[0] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateX[i] - coordinateX[j]); 
-    forzaLJ[1] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateY[i] - coordinateY[j]); 
-    forzaLJ[2] = 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (coordinateZ[i] - coordinateZ[j]); 
-
-    return;
-}
-
-void motoVelocityVerlet(int N, double dt, double massa, double volume,
-                        double* coordinateX, double* coordinateY, double* coordinateZ,
-                        double* velocityX, double* velocityY, double* velocityZ,
-                        double offsetX, double offsetY, double offsetZ,
-                        double rangeX, double rangeY, double rangeZ)
-{
-    //array contenenti posizioni e velocità all'istante n+1
-    double* futureX = new double[N]; 
-    double* futureY = new double[N]; 
-    double* futureZ = new double[N];
-
-    double* futureVX = new double[N]; 
-    double* futureVY = new double[N]; 
-    double* futureVZ = new double[N];
-
-    double* forzaLJ = new double[3];
-
-    forzaLJ[0] = 0;
-    forzaLJ[1] = 0;
-    forzaLJ[2] = 0;
-
-    for (int i = 0; i < N; i++) //generazione delle posizioni all'instante di tempo n+1
-    {
-        double forzaX = 0, forzaY = 0, forzaZ = 0;
-
-        for (int j = 0; j < N; j++) //calcolo forza totale agente sulla particella
-        {
-            if (j==i) continue;
-
-            forzaLennardJones(N, i, j, coordinateX, coordinateY, coordinateZ, forzaLJ);
-            forzaX += forzaLJ[0];
-            forzaY += forzaLJ[1];
-            forzaZ += forzaLJ[2];
-
-        }
-
-        futureX[i] = coordinateX[i] +  velocityX[i] * dt + 1/(2 * massa) * forzaX * pow(dt, 2); //O(dt^3)
-        futureY[i] = coordinateY[i] +  velocityY[i] * dt + 1/(2 * massa) * forzaY * pow(dt, 2);
-        futureZ[i] = coordinateZ[i] +  velocityZ[i] * dt + 1/(2 * massa) * forzaZ * pow(dt, 2);   
-
-    }
-    
-    for (int i = 0; i < N; i++) //generazione delle velocità all'istante di tempo n+1
-    {
-        double forzaX = 0, forzaY = 0, forzaZ = 0;
-        double forzaFutureX = 0, forzaFutureY = 0, forzaFutureZ = 0;
-
-        for (int j = 0; j < N; j++) //calcolo forza totale agente sulla particella agli istanti n e n+1
-        {
-            if (j==i) continue;
-
-            forzaLennardJones(N, i, j, coordinateX, coordinateY, coordinateZ, forzaLJ);
-            forzaX += forzaLJ[0];
-            forzaY += forzaLJ[1];
-            forzaZ += forzaLJ[2];
-            
-            forzaLennardJones(N, i, j, futureX, futureY, futureZ, forzaLJ);
-            forzaFutureX += forzaLJ[0];
-            forzaFutureY += forzaLJ[1];
-            forzaFutureZ += forzaLJ[2];
-        }
-
-        futureVX[i] = velocityX[i] + 1/(2 * massa) * (forzaX + forzaFutureX) * dt; //O(dt^2)
-        futureVY[i] = velocityY[i] + 1/(2 * massa) * (forzaY + forzaFutureY) * dt;
-        futureVZ[i] = velocityZ[i] + 1/(2 * massa) * (forzaZ + forzaFutureZ) * dt;   
-
-        //se la particella ha superato i lati del cubo, la velocità è invertita
-
-        if ((futureX[i] <= offsetX) or (futureX[i] >= offsetX + rangeX))
-        {
-            futureVX[i] = - futureVX[i];
-        }
-        
-        if ((futureY[i] <= offsetY) or (futureY[i] >= offsetY + rangeY))
-        {
-            futureVY[i] = - futureVY[i];
-        }
-        
-        if ((futureZ[i] <= offsetZ) or (futureZ[i] >= offsetZ + rangeZ))
-        {
-            futureVZ[i] = - futureVZ[i];
-        }
-
-    }
-
-    for (int i = 0; i < N; i++) //porre l'istante n+1 = n
-    {
-        coordinateX[i] = futureX[i];
-        coordinateY[i] = futureY[i];
-        coordinateZ[i] = futureZ[i];
-
-        velocityX[i] = futureVX[i];
-        velocityY[i] = futureVY[i];
-        velocityZ[i] = futureVZ[i];
-    }
-
-   delete [] futureX; 
-   delete [] futureY; 
-   delete [] futureZ; 
-   delete [] futureVX; 
-   delete [] futureVY; 
-   delete [] futureVZ;
-   delete [] forzaLJ;
-
-   return;
-}
 
 int main()
 {
-    //si è usato il long perchè spesso il prodotto a * seed andava in overflow e dava un numero negativo
-    long modulo = 2147483647, a = 16807;
+    double lato = 1.e-2; 
+    double volume = pow(lato, 3);
 
-    double offset = 0., range = 1.e-2; 
-
-    double offsetX = offset, offsetY = offset, offsetZ = offset;
-    double rangeX = range, rangeY = range, rangeZ = range;
-
-    //il volume è un cubo di lato range
-
-    double volume = rangeX * rangeY * rangeZ;
-
-    double massa = UMA * numeroMassaArgon;
-    double dt = 1e-4;
-
-    double offsetV = -1e0, rangeV = 2e0;
+    double dt = 1e-6;
 
     char configurazione;
 
@@ -467,73 +77,434 @@ int main()
     }
 
     int N;
-    cout << "Inserire il numero di punti da generare: ";
+    cout << "Inserire il numero di atomi di Argon da generare: ";
     cin >> N;
+
+    double temperatura;
+    cout << "Inserire la temperatura (K): ";
+    cin >> temperatura;
 
     int numeroIterazioni;
     cout << "Inserire il numero di iterazioni: ";
     cin >> numeroIterazioni;
 
-    long seedX, seedY, seedZ;
-    cout << "Inserire i seed per le tre coordinate: "; 
-    cin >> seedX >> seedY >> seedZ;
+    int stepStampa;
+    cout << "Inserire ogni quante iterazioni va stampato lo stato del sistema: ";
+    cin >> stepStampa;
 
-    long seedVX, seedVY, seedVZ;
-    cout << "Inserire i seed per le velocità: ";
-    cin >> seedVX >> seedVY >> seedVZ;
+    int seedPosizioni;
+    cout << "Inserire il seed per le posizioni: ";
+    cin >> seedPosizioni;
+
+    int seedVelocity;
+    cout << "Inserire il seed per le velocità: ";
+    cin >> seedVelocity;
 
 
-    //generazione casuale delle posizioni e delle velocità iniziali
+    //creazione delle matrici contenenti posizioni e velocità di ogni particella in un dato istante
 
-    double* coordinateX = new double[N];
-    double* coordinateY = new double[N];
-    double* coordinateZ = new double[N];
-
-    metropolisCoordinate(seedX, modulo, a, N, offsetX, rangeX, coordinateX);
-    metropolisCoordinate(seedY, modulo, a, N, offsetY, rangeY, coordinateY);
-    metropolisCoordinate(seedZ, modulo, a, N, offsetZ, rangeZ, coordinateZ);
-
-    double* velocityX = new double[N];
-    double* velocityY = new double[N];
-    double* velocityZ = new double[N];
-
-    metropolisVelocity(seedVX, modulo, a, N, offsetV, rangeV, velocityX);
-    metropolisVelocity(seedVY, modulo, a, N, offsetV, rangeV, velocityY);
-    metropolisVelocity(seedVZ, modulo, a, N, offsetV, rangeV, velocityZ);
-
-    //controllo che non vi siano particelle nello stesso punto e nel caso ne cambio la posizione
-    differenceCheck(seedX, seedY, seedZ, modulo, a, N, offsetX, offsetY, offsetZ, rangeX, rangeY, rangeZ, coordinateX, coordinateY, coordinateZ);
-
-    int iterazioneAttuale = 0;
-
-    ofstream fileOutput;
-
-    if (interazioneParticelle) fileOutput.open("outputInterazione.txt");
-    else fileOutput.open("outputNoInterazione.txt");
-
-    fileOutput << "Iterazione\tEnergia\tpV\tNkBT" << endl;
-
-    while (iterazioneAttuale < numeroIterazioni)
+    double** posizioni = new double*[N];
+    for (int i = 0; i < N; i++)
     {
-        print(N, volume, massa, iterazioneAttuale, coordinateX, coordinateY, coordinateZ, velocityX, velocityY, velocityZ, fileOutput);
-
-        motoVelocityVerlet(N, dt, massa, volume, 
-                           coordinateX, coordinateY, coordinateZ, 
-                           velocityX, velocityY, velocityZ, 
-                           offsetX, offsetY, offsetZ, 
-                           rangeX, rangeY, rangeZ);
-        
-        iterazioneAttuale++;      
+        posizioni[i] = new double[3];
     }
 
-    fileOutput.close();
+    double** velocity = new double*[N];
+    for (int i = 0; i < N; i++)
+    {
+        velocity[i] = new double[3];
+    }
 
-    delete [] coordinateX;
-    delete [] coordinateY;
-    delete [] coordinateZ;
-    delete [] velocityX;
-    delete [] velocityY;
-    delete [] velocityZ;
+    //generazione casuale delle posizioni e delle velocità delle particelle
+
+    metropolisPosizioni(seedPosizioni, N, lato, posizioni);
+    generazioneVelocity(seedVelocity, N, temperatura, velocity);
+
+    differenceCheck(seedPosizioni, N, lato, posizioni);
+
+    ofstream fileRisultati ("risultati.txt");
+
+    fileRisultati << "Iterazione\tEnergia\tPressione (p)\tTemperatura (T)\tp * V\tN * kB * T" << endl;
+
+
+    int iterazioneAttuale = 0;
+    while (iterazioneAttuale < numeroIterazioni)
+    {
+        if (iterazioneAttuale % stepStampa == 0)
+        {
+            printRisultati(N, iterazioneAttuale, fileRisultati, volume, posizioni, velocity);
+            print(N, iterazioneAttuale, "posizioni", posizioni);
+            print(N, iterazioneAttuale, "velocità", velocity);
+        }
+
+        motoVelocityVerlet(N, dt, lato, posizioni, velocity);
+ 
+        iterazioneAttuale++;
+    }
+
+
+    fileRisultati.close();
+
+
+    for (int i = 0; i < N; i++)
+    {
+        delete [] posizioni[i];
+        delete [] velocity[i];
+    }
+    delete [] posizioni;
+    delete [] velocity;
 
     return 0;
+}
+
+double distribuzioneCoordinate (double x)
+{
+    return 1;
+}
+
+void metropolisPosizioni (long seed, int N, double lato, double** valoriGenerati)
+{
+
+    double valoreControllo;
+    double valoreTrial;
+
+    long numeroCasualeGrezzo = (a * seed) % modulo;
+    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
+
+    valoreControllo = numeroCasualeNormalizzato;
+
+    for (int k = 0; k < 3; k++)
+    {
+        for (int i = 0; i < N; i++)
+        {
+            numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
+            numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+
+            valoreTrial = numeroCasualeNormalizzato;
+
+            if (distribuzioneCoordinate(valoreTrial) > distribuzioneCoordinate(valoreControllo))
+            {
+                valoreControllo = valoreTrial;
+                valoriGenerati[i][k] = valoreTrial * lato;
+            }
+            else 
+            {
+                numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
+                numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
+
+                double rapporto = numeroCasualeNormalizzato;
+
+                if (distribuzioneCoordinate(valoreTrial)/distribuzioneCoordinate(valoreControllo) > rapporto)
+                {
+                    valoreControllo = valoreTrial;
+                    valoriGenerati[i][k] = valoreTrial * lato;
+                }
+                else
+                {
+                    valoriGenerati[i][k] = valoreControllo * lato;
+                }
+            }
+        }
+    }
+    
+    return;
+}
+
+
+double distribuzioneMaxwellBoltzmann (double temperatura, double moduloVelocity)
+{
+    return sqrt(2/M_PI) * pow(massa/(kB * temperatura), 1.5) * pow(moduloVelocity, 2) * exp(- massa * pow(moduloVelocity, 2)/(2 * kB * temperatura));
+}
+
+void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato)
+{
+    valoreGrezzo = (a * valoreGrezzo) % modulo;
+    valoreNormalizzato = double(valoreGrezzo)/double(modulo);
+    return;
+}
+
+// generazione velocità di partenza
+void generazioneVelocity (long seed, int N, double temperatura, double** velocity)
+{
+
+    double velocityPeak = sqrt(2 * kB * temperatura / massa); //velocità con probabilità più alta
+    double massimoDistribuzione = distribuzioneMaxwellBoltzmann(temperatura, velocityPeak); 
+
+    double velocityMedia = 2/sqrt(M_PI) * velocityPeak; //velocità media
+    //double velocityQuadroMedia = 1.5 * pow(velocityPeak, 2);
+
+    double velocitySigma = sqrt((3 * M_PI - 8)/(2 * M_PI)) * velocityPeak; //deviazione standard
+
+    double rangeVelocity = velocityMedia + 3 * velocitySigma;
+
+    long valoreGeneratoGrezzo = seed;
+    double valoreGeneratoNormalizzato;
+    double valoreGeneratoFinale;
+    double valoreGeneratoControllo;
+
+    double* velocityParticellaCorrente = new double[3];
+
+    for (int i = 0; i < N; i++) 
+    {
+        for (int k = 0; k < 3; k++) //generazione delle velocità lungo i tre assi per una particella
+        {
+            generatoreLCG(valoreGeneratoGrezzo, valoreGeneratoNormalizzato);
+            valoreGeneratoFinale = (valoreGeneratoNormalizzato * 2 - 1) * rangeVelocity / sqrt(3);
+            velocityParticellaCorrente[k] = valoreGeneratoFinale;
+        }
+
+        double moduloVelocity = sqrt(pow(velocityParticellaCorrente[0],2) + 
+                                     pow(velocityParticellaCorrente[1],2) +
+                                     pow(velocityParticellaCorrente[2],2));
+    
+        generatoreLCG(valoreGeneratoGrezzo, valoreGeneratoNormalizzato);
+        valoreGeneratoControllo = valoreGeneratoNormalizzato * massimoDistribuzione;
+
+        if (valoreGeneratoControllo <= distribuzioneMaxwellBoltzmann(temperatura, moduloVelocity)) //check 
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                velocity[i][k] = velocityParticellaCorrente[k];
+            }
+        }        
+        else i--;
+    }
+
+    delete [] velocityParticellaCorrente;
+
+    return;
+}
+
+// data la particella i-esima, calcola la forza totale agente su essa sui tre assi
+void forzaLennardJones (int N, int i, double** posizioni, double* forza)
+{
+
+    for (int j = 0; j < N; j++)
+    {
+        if (j==i) continue;
+
+        double distanza = funzioneDistanza(N, i, j, posizioni);
+
+        for (int k = 0; k < 3; k++)
+        {
+            forza[k] += 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (posizioni[i][k] - posizioni[j][k]);
+        }
+    }
+
+
+    return;
+}
+
+void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, double** velocity)
+{
+    //posizioni e velocità all'istante n+1
+    double** posizioniFuture = new double*[N];
+    for (int i = 0; i < N; i++)
+    {
+        posizioniFuture[i] = new double[3];
+    }
+
+    double** velocityFuture = new double*[N];
+    for (int i = 0; i < N; i++)
+    {
+        velocityFuture[i] = new double[3];
+    }
+
+
+    double* forzaLJ = new double[3];
+
+    for (int i = 0; i < N; i++) //generazione delle posizioni all'instante di tempo n+1
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            forzaLJ[k] = 0;
+        }
+
+        if (interazioneParticelle) forzaLennardJones(N, i, posizioni, forzaLJ);
+        
+        for (int k = 0; k < 3; k++)
+        {
+            posizioniFuture[i][k] = posizioni[i][k] + velocity[i][k] * dt + 1/(2 * massa) * forzaLJ[k] * pow(dt, 2); // + O(dt^3)
+        }
+
+    }
+
+    double* forzaFuturaLJ = new double[3]; 
+    
+    for (int i = 0; i < N; i++) //generazione delle velocità all'istante di tempo n+1
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            forzaLJ[k] = 0;
+            forzaFuturaLJ[k] = 0;
+        }
+
+        if (interazioneParticelle)
+        {
+            forzaLennardJones(N, i, posizioni, forzaLJ);
+            forzaLennardJones(N, i, posizioniFuture, forzaFuturaLJ);
+        }
+        
+        for (int k = 0; k < 3; k++)
+        {
+            velocityFuture[i][k] = velocity[i][k] + 1/(2 * massa) * (forzaLJ[k] + forzaFuturaLJ[k]) * dt; // + O(dt^2)
+
+            //se la particella ha superato i bordi del cubo, la velocità è invertita
+            if ((posizioniFuture[i][k] <= 0) or (posizioniFuture[i][k] >= lato)) velocityFuture[i][k] = - velocityFuture[i][k];
+        }
+
+    }
+
+    //poniamo come presente l'istante n+1
+    for (int i = 0; i < N; i++)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            posizioni[i][k] = posizioniFuture[i][k];
+            velocity[i][k] = velocityFuture[i][k];
+        }
+    }
+
+    for (int i = 0; i < N; i++)
+    {
+        delete [] posizioniFuture[i];
+        delete [] velocityFuture[i];
+    }
+    delete [] posizioniFuture;
+    delete [] velocityFuture;
+    delete [] forzaLJ;
+    delete [] forzaFuturaLJ;
+
+   return;
+}
+
+// controllo se due particelle sono nello stesso punto e in quel caso sposto la seconda
+void differenceCheck (long seed, int N, double lato, double** posizioni)
+{
+    double** posizioniSostitutive = new double*[1];
+    posizioniSostitutive[0] = new double[3];
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (j==i) continue;
+
+            if (funzioneDistanza(N, i, j, posizioni) == 0)
+            {
+                seed++;
+
+                metropolisPosizioni(seed, 1, lato, posizioniSostitutive);
+
+                for (int k = 0; k < 3; k++)
+                {
+                    posizioni[j][k] = posizioniSostitutive[0][k];
+                }
+
+                j--;
+            }
+        }
+    }
+
+    delete [] posizioniSostitutive[0];
+    delete [] posizioniSostitutive;
+
+    return;
+}
+
+double funzioneDistanza (int N, int i, int j, double** posizioni)
+{
+    double distanza = 0;
+    for (int k = 0; k < 3; k++)
+    {
+        distanza += pow(posizioni[i][k] - posizioni[j][k], 2);
+    }
+
+    return sqrt(distanza);
+}
+
+double moduloQuadro (int N, double** velocity)
+{
+    double sommaQuadra = 0;
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            sommaQuadra += pow(velocity[i][k], 2);
+        }
+    }
+
+    return sommaQuadra;
+}
+
+double funzionePressione (int N, double volume, double** velocity)
+{
+    double moduloVelocityQuadro = moduloQuadro(N, velocity);
+
+    return 1/(3 * volume) * massa * moduloVelocityQuadro;
+}
+
+double funzioneTemperatura (int N, double** velocity)
+{
+    double moduloVelocityQuadro = moduloQuadro(N, velocity);
+
+    return 1/((3 * N - 3) * kB) * massa * moduloVelocityQuadro;
+}
+
+double funzioneEnergia (int N, double** posizioni, double** velocity)
+{
+    double moduloVelocityQuadro = moduloQuadro(N, velocity);
+
+    double energiaCinetica = 0.5 * massa * moduloVelocityQuadro;
+
+
+    double potenzialeLennardJones = 0;
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (j==i) continue;
+
+            double distanza = funzioneDistanza(N, i, j, posizioni);
+
+            potenzialeLennardJones += 0.5 * 4. * epsilonArgon * (pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6));
+        }
+    }
+    if (!interazioneParticelle) potenzialeLennardJones = 0;
+
+    double energiaTotale = energiaCinetica + potenzialeLennardJones;
+    
+    return energiaTotale;
+}
+
+void print (int N, int iterazioneAttuale, string path, double** elementi)
+{
+    ofstream file (path + "/" + to_string(iterazioneAttuale) + ".txt");
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            file << elementi[i][k];
+
+            if (k==2) continue;
+            file << "\t";
+        }
+
+        file << endl;
+    }
+
+    file.close();   
+}
+
+void printRisultati (int N, int iterazioneAttuale, ofstream &fileRisultati, double volume, double** posizioni, double** velocity)
+{
+    double energiaTotaleIstantanea = funzioneEnergia(N, posizioni, velocity);
+    double pressioneIstantanea  = funzionePressione(N, volume, velocity);
+    double temperaturaIstantanea = funzioneTemperatura(N, velocity);
+
+    fileRisultati << iterazioneAttuale << "\t" << energiaTotaleIstantanea << "\t" << pressioneIstantanea << "\t" << temperaturaIstantanea << "\t" << pressioneIstantanea * volume << "\t" << N * kB * temperaturaIstantanea << endl;
+
 }

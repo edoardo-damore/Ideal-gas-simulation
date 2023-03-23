@@ -64,7 +64,6 @@ int main()
     double dt = 1e-6;
 
     char configurazione;
-
     cout << "Vuoi che le particelle interagiscano tra loro (y/n)? ";
     cin >> configurazione;
 
@@ -116,12 +115,14 @@ int main()
     }
 
     //generazione casuale delle posizioni e delle velocità delle particelle
-
     metropolisPosizioni(seedPosizioni, N, lato, posizioni);
     generazioneVelocity(seedVelocity, N, temperatura, velocity);
 
+    // controllo non vi siano particelle sovrapposte
     differenceCheck(seedPosizioni, N, lato, posizioni);
 
+
+    // creazione del file su cui andranno scritti i parametri che ci interessano del sistema
     ofstream fileRisultati ("risultati.txt");
 
     fileRisultati << "Iterazione\tEnergia\tPressione (p)\tTemperatura (T)\tp * V\tN * kB * T" << endl;
@@ -130,6 +131,7 @@ int main()
     int iterazioneAttuale = 0;
     while (iterazioneAttuale < numeroIterazioni)
     {
+        // stampa dei risulati ogni tot iterazioni
         if (iterazioneAttuale % stepStampa == 0)
         {
             printRisultati(N, iterazioneAttuale, fileRisultati, volume, posizioni, velocity);
@@ -137,15 +139,15 @@ int main()
             print(N, iterazioneAttuale, "velocità", velocity);
         }
 
+        // utilizzo dell'algoritmo velocity-verlet per l'evoluzione del sistema
         motoVelocityVerlet(N, dt, lato, posizioni, velocity);
  
         iterazioneAttuale++;
     }
 
-
     fileRisultati.close();
 
-
+    // distruzione dei vari array dinamici creati
     for (int i = 0; i < N; i++)
     {
         delete [] posizioni[i];
@@ -162,6 +164,8 @@ double distribuzioneCoordinate (double x)
     return 1;
 }
 
+// utilizzo dell'algoritmo di metropolis per la creazione delle posizioni delle particelle
+// i numeri casuali vengono generati tramite LCG con parametri di park-miller partendo da un seed scelto a caso dall'utente
 void metropolisPosizioni (long seed, int N, double lato, double** valoriGenerati)
 {
 
@@ -216,6 +220,7 @@ double distribuzioneMaxwellBoltzmann (double temperatura, double moduloVelocity)
     return sqrt(2/M_PI) * pow(massa/(kB * temperatura), 1.5) * pow(moduloVelocity, 2) * exp(- massa * pow(moduloVelocity, 2)/(2 * kB * temperatura));
 }
 
+// algoritmo LCG in configurazione di park-miller
 void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato)
 {
     valoreGrezzo = (a * valoreGrezzo) % modulo;
@@ -223,7 +228,8 @@ void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato)
     return;
 }
 
-// generazione velocità di partenza
+// generazione velocità di partenza secondo la distribuzione di maxwell-boltzmann
+// i numeri casuali sono generati tramite LCG
 void generazioneVelocity (long seed, int N, double temperatura, double** velocity)
 {
 
@@ -275,7 +281,7 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
     return;
 }
 
-// data la particella i-esima, calcola la forza totale agente su essa sui tre assi
+// data la particella i-esima, calcola la forza totale di lennard-jones agente su essa sui tre assi
 void forzaLennardJones (int N, int i, double** posizioni, double* forza)
 {
 
@@ -295,6 +301,7 @@ void forzaLennardJones (int N, int i, double** posizioni, double* forza)
     return;
 }
 
+// propagatore velocity-verlet utilizzato per far evolvere il sistema
 void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, double** velocity)
 {
     //posizioni e velocità all'istante n+1
@@ -344,7 +351,7 @@ void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, doubl
             forzaLennardJones(N, i, posizioni, forzaLJ);
             forzaLennardJones(N, i, posizioniFuture, forzaFuturaLJ);
         }
-        
+
         for (int k = 0; k < 3; k++)
         {
             velocityFuture[i][k] = velocity[i][k] + 1/(2 * massa) * (forzaLJ[k] + forzaFuturaLJ[k]) * dt; // + O(dt^2)
@@ -479,6 +486,7 @@ double funzioneEnergia (int N, double** posizioni, double** velocity)
     return energiaTotale;
 }
 
+// scrive un file con posizioni o velocità in un dato momento nella cartella scelta
 void print (int N, int iterazioneAttuale, string path, double** elementi)
 {
     ofstream file (path + "/" + to_string(iterazioneAttuale) + ".txt");
@@ -499,6 +507,7 @@ void print (int N, int iterazioneAttuale, string path, double** elementi)
     file.close();   
 }
 
+// stampa su un file i parametri principali del sistema in un determinato istante
 void printRisultati (int N, int iterazioneAttuale, ofstream &fileRisultati, double volume, double** posizioni, double** velocity)
 {
     double energiaTotaleIstantanea = funzioneEnergia(N, posizioni, velocity);

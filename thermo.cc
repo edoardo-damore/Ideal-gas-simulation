@@ -6,7 +6,6 @@
 using namespace std;
 
 
-#define G 6.67e-11
 #define kB 1.380649e-23
 #define Na 6.02214129e23
 #define UMA 1.66054e-27 //kg
@@ -41,7 +40,7 @@ void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, doubl
 
 void differenceCheck (long seed, int N, double lato, double** posizioni);
 
-double funzioneDistanza (int N, int i, int j, double** posizioni);
+double funzioneDistanza (int i, int j, double** posizioni);
 
 double moduloQuadro (int N, double** velocity);
 
@@ -67,8 +66,23 @@ int main()
     cout << "Vuoi che le particelle interagiscano tra loro (y/n)? ";
     cin >> configurazione;
 
-    if (configurazione == 'y') interazioneParticelle = true;
-    else if (configurazione == 'n') interazioneParticelle = false;
+    string cartellaPosizioni, cartellaVelocity, nomeFile;
+
+    if (configurazione == 'y') 
+    {
+        interazioneParticelle = true;
+        cartellaPosizioni = "posizioniInterazione";
+        cartellaVelocity = "velocitàInterazione";
+        nomeFile = "risultatiInterazione.txt";
+
+    }
+    else if (configurazione == 'n') 
+    {
+        interazioneParticelle = false;
+        cartellaPosizioni = "posizioniNoInterazione";
+        cartellaVelocity = "velocitàNoInterazione";
+        nomeFile = "risultatiNoInterazione.txt";
+    }
     else 
     {
         cout << "Invalid input. Program aborted." << endl;
@@ -123,7 +137,7 @@ int main()
 
 
     // creazione del file su cui andranno scritti i parametri che ci interessano del sistema
-    ofstream fileRisultati ("risultati.txt");
+    ofstream fileRisultati (nomeFile);
 
     fileRisultati << "Iterazione\tEnergia\tPressione (p)\tTemperatura (T)\tp * V\tN * kB * T" << endl;
 
@@ -135,8 +149,8 @@ int main()
         if (iterazioneAttuale % stepStampa == 0)
         {
             printRisultati(N, iterazioneAttuale, fileRisultati, volume, posizioni, velocity);
-            print(N, iterazioneAttuale, "posizioni", posizioni);
-            print(N, iterazioneAttuale, "velocità", velocity);
+            print(N, iterazioneAttuale, cartellaPosizioni, posizioni);
+            print(N, iterazioneAttuale, cartellaVelocity, velocity);
         }
 
         // utilizzo dell'algoritmo velocity-verlet per l'evoluzione del sistema
@@ -255,7 +269,7 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
         for (int k = 0; k < 3; k++) //generazione delle velocità lungo i tre assi per una particella
         {
             generatoreLCG(valoreGeneratoGrezzo, valoreGeneratoNormalizzato);
-            valoreGeneratoFinale = (valoreGeneratoNormalizzato * 2 - 1) * rangeVelocity / sqrt(3);
+            valoreGeneratoFinale = (valoreGeneratoNormalizzato * 2 - 1) * rangeVelocity / sqrt(3); // ? viene abbastanza bene se si divide per 2
             velocityParticellaCorrente[k] = valoreGeneratoFinale;
         }
 
@@ -284,19 +298,17 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
 // data la particella i-esima, calcola la forza totale di lennard-jones agente su essa sui tre assi
 void forzaLennardJones (int N, int i, double** posizioni, double* forza)
 {
-
     for (int j = 0; j < N; j++)
     {
         if (j==i) continue;
 
-        double distanza = funzioneDistanza(N, i, j, posizioni);
+        double distanza = funzioneDistanza(i, j, posizioni);
 
         for (int k = 0; k < 3; k++)
         {
             forza[k] += 24. * epsilonArgon/pow(distanza, 2) * (2 * pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6)) * (posizioni[i][k] - posizioni[j][k]);
         }
     }
-
 
     return;
 }
@@ -328,7 +340,7 @@ void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, doubl
         }
 
         if (interazioneParticelle) forzaLennardJones(N, i, posizioni, forzaLJ);
-        
+
         for (int k = 0; k < 3; k++)
         {
             posizioniFuture[i][k] = posizioni[i][k] + velocity[i][k] * dt + 1/(2 * massa) * forzaLJ[k] * pow(dt, 2); // + O(dt^3)
@@ -397,7 +409,7 @@ void differenceCheck (long seed, int N, double lato, double** posizioni)
         {
             if (j==i) continue;
 
-            if (funzioneDistanza(N, i, j, posizioni) == 0)
+            if (funzioneDistanza(i, j, posizioni) == 0)
             {
                 seed++;
 
@@ -419,7 +431,7 @@ void differenceCheck (long seed, int N, double lato, double** posizioni)
     return;
 }
 
-double funzioneDistanza (int N, int i, int j, double** posizioni)
+double funzioneDistanza (int i, int j, double** posizioni)
 {
     double distanza = 0;
     for (int k = 0; k < 3; k++)
@@ -474,7 +486,7 @@ double funzioneEnergia (int N, double** posizioni, double** velocity)
         {
             if (j==i) continue;
 
-            double distanza = funzioneDistanza(N, i, j, posizioni);
+            double distanza = funzioneDistanza(i, j, posizioni);
 
             potenzialeLennardJones += 0.5 * 4. * epsilonArgon * (pow(sigmaArgon/distanza, 12) - pow(sigmaArgon/distanza, 6));
         }

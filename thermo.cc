@@ -28,7 +28,9 @@ double distribuzioneCoordinate (double x);
 
 double distribuzioneMaxwellBoltzmann (double temperature, double moduloVelocity);
 
-void metropolisPosizioni (long seed, int N, double lato, double** valoriGenerati);
+void metropolis (double &valoreControllo, long &numeroCasualeGrezzo, string oggetto);
+
+void generazionePosizioni (long seed, int N, double lato, double** valoriGenerati);
 
 void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato);
 
@@ -129,7 +131,7 @@ int main()
     }
 
     //generazione casuale delle posizioni e delle velocità delle particelle
-    metropolisPosizioni(seedPosizioni, N, lato, posizioni);
+    generazionePosizioni(seedPosizioni, N, lato, posizioni);
     generazioneVelocity(seedVelocity, N, temperatura, velocity);
 
     // controllo non vi siano particelle sovrapposte
@@ -178,56 +180,58 @@ double distribuzioneCoordinate (double x)
     return 1;
 }
 
-// utilizzo dell'algoritmo di metropolis per la creazione delle posizioni delle particelle
-// i numeri casuali vengono generati tramite LCG con parametri di park-miller partendo da un seed scelto a caso dall'utente
-void metropolisPosizioni (long seed, int N, double lato, double** valoriGenerati)
+double distribuzioneMetropolis (double x, string oggetto)
 {
+    if (oggetto=="posizione") return 1;
+    else if (oggetto=="theta") return sin(x);
+    else if (oggetto=="phi") return 1;
+    else return 1;
+}
 
-    double valoreControllo;
+//algoritmo di metropolis che genera un numero casuale secondo una distribuzione scelta in base all'oggetto
+void metropolis (double &valoreControllo, long &numeroCasualeGrezzo, string oggetto)
+{
     double valoreTrial;
 
-    long numeroCasualeGrezzo = (a * seed) % modulo;
-    double numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.) / (modulo * 1.);
+    generatoreLCG(numeroCasualeGrezzo, valoreTrial);
 
-    valoreControllo = numeroCasualeNormalizzato;
-
-    for (int k = 0; k < 3; k++)
+    if (distribuzioneMetropolis(valoreTrial, oggetto) > distribuzioneMetropolis(valoreControllo, oggetto))
     {
-        for (int i = 0; i < N; i++)
-        {
-            numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-            numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-
-            valoreTrial = numeroCasualeNormalizzato;
-
-            if (distribuzioneCoordinate(valoreTrial) > distribuzioneCoordinate(valoreControllo))
-            {
-                valoreControllo = valoreTrial;
-                valoriGenerati[i][k] = valoreTrial * lato;
-            }
-            else 
-            {
-                numeroCasualeGrezzo = (a * numeroCasualeGrezzo) % modulo;
-                numeroCasualeNormalizzato = (numeroCasualeGrezzo * 1.)/(modulo * 1.);
-
-                double rapporto = numeroCasualeNormalizzato;
-
-                if (distribuzioneCoordinate(valoreTrial)/distribuzioneCoordinate(valoreControllo) > rapporto)
-                {
-                    valoreControllo = valoreTrial;
-                    valoriGenerati[i][k] = valoreTrial * lato;
-                }
-                else
-                {
-                    valoriGenerati[i][k] = valoreControllo * lato;
-                }
-            }
-        }
+        valoreControllo = valoreTrial;
     }
-    
+    else 
+    {
+        double rapporto;
+        generatoreLCG(numeroCasualeGrezzo, rapporto);
+
+        if (distribuzioneMetropolis(valoreTrial, oggetto)/distribuzioneMetropolis(valoreControllo, oggetto) > rapporto)
+        {
+            valoreControllo = valoreTrial;
+        }        
+    }
+
     return;
 }
 
+//utilizzo di metropolis per generare le posizioni iniziali
+void generazionePosizioni (long seed, int N, double lato, double** valoriGenerati)
+{
+    long numeroCasualeGrezzo = seed;
+    double numeroCasualeNormalizzato;
+
+    generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
+
+    for (int i = 0; i < N; i++)
+    {
+        for (int k = 0; k < 3; k++)
+        {
+            metropolis(numeroCasualeNormalizzato, numeroCasualeGrezzo, "posizione");
+            valoriGenerati[i][k] = numeroCasualeNormalizzato * lato;
+        }
+    }
+
+    return;
+}
 
 double distribuzioneMaxwellBoltzmann (double temperatura, double moduloVelocity)
 {
@@ -239,58 +243,52 @@ void generatoreLCG (long &valoreGrezzo, double &valoreNormalizzato)
 {
     valoreGrezzo = (a * valoreGrezzo) % modulo;
     valoreNormalizzato = double(valoreGrezzo)/double(modulo);
+
     return;
 }
 
-// generazione velocità di partenza secondo la distribuzione di maxwell-boltzmann
-// i numeri casuali sono generati tramite LCG
 void generazioneVelocity (long seed, int N, double temperatura, double** velocity)
 {
+    double moduloVelocityPeak = sqrt(2 * kB * temperatura / massa); //modulo della velocità con probabilità più alta
+    double moduloVelocityMedia = 2/sqrt(M_PI) * moduloVelocityPeak; //modulo della velocità medio
+    double moduloVelocitySigma = sqrt((3 * M_PI - 8)/(2 * M_PI)) * moduloVelocityPeak; //deviazione standard
 
-    double velocityPeak = sqrt(2 * kB * temperatura / massa); //velocità con probabilità più alta
-    double massimoDistribuzione = distribuzioneMaxwellBoltzmann(temperatura, velocityPeak); 
+    double massimoDistribuzione = distribuzioneMaxwellBoltzmann(temperatura, moduloVelocityPeak); //valore massimo della distribuzione di M-B
 
-    double velocityMedia = 2/sqrt(M_PI) * velocityPeak; //velocità media
-    //double velocityQuadroMedia = 1.5 * pow(velocityPeak, 2);
+    double rangeModuloVelocity = moduloVelocityMedia + 3 * moduloVelocitySigma; //range in cui generare i valori del modulo della velocità
 
-    double velocitySigma = sqrt((3 * M_PI - 8)/(2 * M_PI)) * velocityPeak; //deviazione standard
+    long numeroCasualeGrezzo = seed;
+    double numeroCasualeNormalizzato;
 
-    double rangeVelocity = velocityMedia + 3 * velocitySigma;
+    double moduloVelocityGenerato, valoreControllo;
 
-    long valoreGeneratoGrezzo = seed;
-    double valoreGeneratoNormalizzato;
-    double valoreGeneratoFinale;
-    double valoreGeneratoControllo;
-
-    double* velocityParticellaCorrente = new double[3];
-
-    for (int i = 0; i < N; i++) 
+    for (int i = 0; i < N; i++)
     {
-        for (int k = 0; k < 3; k++) //generazione delle velocità lungo i tre assi per una particella
+        generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
+        valoreControllo = numeroCasualeNormalizzato * massimoDistribuzione;
+
+        generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
+        moduloVelocityGenerato = numeroCasualeNormalizzato * rangeModuloVelocity;
+
+        //se c > f(v) allora si deve generare un altro modulo
+        if (valoreControllo > distribuzioneMaxwellBoltzmann(temperatura, moduloVelocityGenerato))
         {
-            generatoreLCG(valoreGeneratoGrezzo, valoreGeneratoNormalizzato);
-            valoreGeneratoFinale = (valoreGeneratoNormalizzato * 2 - 1) * rangeVelocity / sqrt(3); // ? viene abbastanza bene se si divide per 2
-            velocityParticellaCorrente[k] = valoreGeneratoFinale;
+            i--;
+            continue;
         }
 
-        double moduloVelocity = sqrt(pow(velocityParticellaCorrente[0],2) + 
-                                     pow(velocityParticellaCorrente[1],2) +
-                                     pow(velocityParticellaCorrente[2],2));
-    
-        generatoreLCG(valoreGeneratoGrezzo, valoreGeneratoNormalizzato);
-        valoreGeneratoControllo = valoreGeneratoNormalizzato * massimoDistribuzione;
+        generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
+        metropolis(numeroCasualeNormalizzato, numeroCasualeGrezzo, "theta");
+        double theta = numeroCasualeNormalizzato * M_PI;
 
-        if (valoreGeneratoControllo <= distribuzioneMaxwellBoltzmann(temperatura, moduloVelocity)) //check 
-        {
-            for (int k = 0; k < 3; k++)
-            {
-                velocity[i][k] = velocityParticellaCorrente[k];
-            }
-        }        
-        else i--;
+        generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
+        metropolis(numeroCasualeNormalizzato, numeroCasualeGrezzo, "phi");
+        double phi = numeroCasualeNormalizzato * 2 * M_PI;
+
+        velocity[i][0] = moduloVelocityGenerato * sin(theta) * cos(phi);
+        velocity[i][1] = moduloVelocityGenerato * sin(theta) * sin(phi);
+        velocity[i][2] = moduloVelocityGenerato * cos(theta);
     }
-
-    delete [] velocityParticellaCorrente;
 
     return;
 }
@@ -413,7 +411,7 @@ void differenceCheck (long seed, int N, double lato, double** posizioni)
             {
                 seed++;
 
-                metropolisPosizioni(seed, 1, lato, posizioniSostitutive);
+                generazionePosizioni(seed, 1, lato, posizioniSostitutive);
 
                 for (int k = 0; k < 3; k++)
                 {

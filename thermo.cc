@@ -501,6 +501,8 @@ void print (int N, int iterazioneAttuale, string path, double** elementi)
 {
     ofstream file (path + "/" + to_string(iterazioneAttuale) + ".txt");
 
+    file << "X\tY\tZ" << endl;
+    
     for (int i = 0; i < N; i++)
     {
         for (int k = 0; k < 3; k++)

@@ -5,66 +5,52 @@ import matplotlib.animation as animation
 
 print("Inserire il numero di particelle: ")
 numeroParticelle = int(input())
-
 print("Inserire il numero di iterazioni: ")
 numeroIterazioni = int(input())
 
-outputInterazione = pd.read_table("outputInterazione.txt")
-outputNoInterazione = pd.read_table("outputNoInterazione.txt")
+#import dei file con i risultati per entrambe le casistiche
+outputInterazione = pd.read_table("risultatiInterazione.txt")
+outputNoInterazione = pd.read_table("risultatiNoInterazione.txt")
 
-iterazione = outputInterazione["Iterazione"]
+#estrazione dei dati dai dataframes
+iterazioni = outputInterazione["Iterazione"]
 
-energiaInterazione = outputInterazione["Energia"]
-pvInterazione = outputInterazione["pV"]
-nkbtInterazione = outputInterazione["NkBT"]
+energiaI = outputInterazione["Energia"]
+sinistraI = outputInterazione["p * V"]
+destraI = outputInterazione["N * kB * T"]
 
-energiaNoInterazione = outputNoInterazione["Energia"]
-pvNoInterazione = outputNoInterazione["pV"]
-nkbtNoInterazione = outputNoInterazione["NkBT"]
-
-massimoEnergia = 0
-
-for e in energiaInterazione:
-    if (e>massimoEnergia):
-        massimoEnergia = e
-
-minimoEnergia = massimoEnergia
-
-for e in energiaInterazione:
-    if (e < minimoEnergia):
-        minimoEnergia = e
-
-print(energiaInterazione)
+energiaN = outputNoInterazione["Energia"]
+sinistraN = outputNoInterazione["p * V"]
+destraN = outputNoInterazione["N * kB * T"]
 
 
+#generazione primo plot con andamento energia totale del sistema
 fig, axs = plt.subplots(2)
-fig.set_size_inches(12, 10)
+fig.set_size_inches(12, 9)
 fig.suptitle("Andamento dell'energia totale del sistema")
 
 axs[0].set_xlabel("Iterazioni")
 axs[0].set_ylabel(r"Energia (J)")
 
-axs[0].set_xlim(0, numeroIterazioni)
-axs[1].set_xlim(0, numeroIterazioni)
-#axs[1].set_ylim(minimoEnergia, massimoEnergia)
-
-
 axs[1].set_xlabel("Iterazioni")
 axs[1].set_ylabel(r"Energia (J)")
-
 
 axs[0].set_title("Senza interazione tra particelle")
 axs[1].set_title("Con interazione tra particelle")
 
-axs[0].plot(iterazione, energiaNoInterazione)
-axs[1].plot(iterazione, energiaInterazione)
+axs[0].set_xlim(0, numeroIterazioni)
+axs[1].set_xlim(0, numeroIterazioni)
+
+axs[0].plot(iterazioni, energiaN)
+axs[1].plot(iterazioni, energiaI)
 
 fig.savefig("comparazioneEnergia.png")
 
 plt.cla()
 
+#generazione secondo plot con visualizzazione dell'aderimento alla legge dei gas ideali
 fig, axs = plt.subplots(2)
-fig.set_size_inches(12, 10)
+fig.set_size_inches(12, 9)
 fig.suptitle("Andamento legge dei gas ideali")
 
 axs[0].set_xlabel("Iterazioni")
@@ -79,14 +65,13 @@ axs[1].set_title("Con interazione tra particelle")
 axs[0].set_xlim(0, numeroIterazioni)
 axs[1].set_xlim(0, numeroIterazioni)
 
-axs[0].plot(iterazione, pvNoInterazione, label=r"$pV$")
-axs[0].plot(iterazione, nkbtNoInterazione, label=r"$N k_b T$")
+axs[0].plot(iterazioni, sinistraN, label=r"$pV$")
+axs[0].plot(iterazioni, destraN, label=r"$N k_b T$")
 
-axs[1].plot(iterazione, pvInterazione, label=r"$pV$")
-axs[1].plot(iterazione, nkbtInterazione, label=r"$N k_B T$")
+axs[1].plot(iterazioni, sinistraI, label=r"$pV$")
+axs[1].plot(iterazioni, destraI, label=r"$N k_B T$")
 
 axs[0].legend()
-
 axs[1].legend()
 
 fig.savefig("comparazioneLegge.png")
@@ -123,13 +108,13 @@ def animate(i):
 
 
 
-    cI = pd.read_table(f".coordinateInterazione/{i}.txt")
-    cNI = pd.read_table(f".coordinateNoInterazione/{i}.txt")
-    vI = pd.read_table(f".velocitàInterazione/{i}.txt")
-    vNI = pd.read_table(f".velocitàNoInterazione/{i}.txt")
+    cI = pd.read_table(f"posizioniInterazione/{iterazioni[i]}.txt")
+    cNI = pd.read_table(f"posizioniNoInterazione/{iterazioni[i]}.txt")
+    vI = pd.read_table(f"velocitàInterazione/{iterazioni[i]}.txt")
+    vNI = pd.read_table(f"velocitàNoInterazione/{iterazioni[i]}.txt")
 
-    axs[0].scatter(cNI["x"], cNI["y"], cNI["z"], color="blue")
-    axs[1].scatter(cI["x"], cI["y"], cI["z"], color="blue")   
+    axs[0].scatter(cNI["X"], cNI["Y"], cNI["Z"], color="blue")
+    axs[1].scatter(cI["X"], cI["Y"], cI["Z"], color="blue")   
 
-anim = animation.FuncAnimation(fig, animate, numeroIterazioni, blit=False)
+anim = animation.FuncAnimation(fig, animate, len(iterazioni), blit=False)
 anim.save("comparazioneParticelle.gif", writer=animation.PillowWriter(fps=5))

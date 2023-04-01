@@ -264,6 +264,7 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
 
     for (int i = 0; i < N; i++)
     {
+        //generazione del valore di controllo e del modulo della velocità
         generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
         valoreControllo = numeroCasualeNormalizzato * massimoDistribuzione;
 
@@ -277,6 +278,7 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
             continue;
         }
 
+        //generare casualmente gli angoli theta e phi secondo la distribuzione sferica
         generatoreLCG(numeroCasualeGrezzo, numeroCasualeNormalizzato);
         metropolis(numeroCasualeNormalizzato, numeroCasualeGrezzo, "theta");
         double theta = numeroCasualeNormalizzato * M_PI;
@@ -285,6 +287,7 @@ void generazioneVelocity (long seed, int N, double temperatura, double** velocit
         metropolis(numeroCasualeNormalizzato, numeroCasualeGrezzo, "phi");
         double phi = numeroCasualeNormalizzato * 2 * M_PI;
 
+        //trovare le componenti della velocità tramite coordinate sferiche
         velocity[i][0] = moduloVelocityGenerato * sin(theta) * cos(phi);
         velocity[i][1] = moduloVelocityGenerato * sin(theta) * sin(phi);
         velocity[i][2] = moduloVelocityGenerato * cos(theta);

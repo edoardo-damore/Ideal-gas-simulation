@@ -78,7 +78,7 @@ fig.savefig("comparazioneLegge.png")
 
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12,9), subplot_kw={"projection": "3d"})
 
-lato = 0.01
+lato = 1e-6
 
 def animate(i):
 
@@ -90,13 +90,13 @@ def animate(i):
     axs[0].set_title("Senza interazione")
     axs[1].set_title("Con interazione")
 
-    axs[0].set_xlabel("X")
-    axs[0].set_ylabel("Y")
-    axs[0].set_zlabel("Z")
+    axs[0].set_xlabel("X (m)")
+    axs[0].set_ylabel("Y (m)")
+    axs[0].set_zlabel("Z (m)")
 
-    axs[1].set_xlabel("X")
-    axs[1].set_ylabel("Y")
-    axs[1].set_zlabel("Z")
+    axs[1].set_xlabel("X (m)")
+    axs[1].set_ylabel("Y (m)")
+    axs[1].set_zlabel("Z (m)")
 
     axs[0].set_xlim(0, lato)
     axs[0].set_ylim(0, lato)
@@ -110,8 +110,8 @@ def animate(i):
 
     cI = pd.read_table(f"posizioniInterazione/{iterazioni[i]}.txt")
     cNI = pd.read_table(f"posizioniNoInterazione/{iterazioni[i]}.txt")
-    vI = pd.read_table(f"velocitàInterazione/{iterazioni[i]}.txt")
-    vNI = pd.read_table(f"velocitàNoInterazione/{iterazioni[i]}.txt")
+    #vI = pd.read_table(f"velocitàInterazione/{iterazioni[i]}.txt")
+    #vNI = pd.read_table(f"velocitàNoInterazione/{iterazioni[i]}.txt")
 
     axs[0].scatter(cNI["X"], cNI["Y"], cNI["Z"], color="blue")
     axs[1].scatter(cI["X"], cI["Y"], cI["Z"], color="blue")   

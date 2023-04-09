@@ -6,15 +6,15 @@
 using namespace std;
 
 
-#define kB 1.380649e-23
+#define kB 1.380649e-23 // J/K
 #define Na 6.02214129e23
 #define UMA 1.66054e-27 //kg
-#define epsilonArgon 111.84 //K
+#define epsilonArgon 111.84 * kB //J
 #define sigmaArgon 362.3e-12 //m
 #define numeroMassaArgon 39.948
 //sono stati scelti i parametri dell'argon per simulare il gas ideale
 
-long modulo = 2147483647, a = 16807;
+long modulo = 2147483647, a = 16807; //parametri di Park-Miller
 double massa = UMA * numeroMassaArgon;
 bool interazioneParticelle = false;
 
@@ -23,8 +23,6 @@ void debug (double x)
     cout << x << endl;
     return;
 }
-
-double distribuzioneCoordinate (double x);
 
 double distribuzioneMaxwellBoltzmann (double temperature, double moduloVelocity);
 
@@ -59,10 +57,10 @@ void printRisultati (int N, int iterazioneAttuale, ofstream &fileRisultati, doub
 
 int main()
 {
-    double lato = 1.e-2; 
+    double lato = 1.e-6; 
     double volume = pow(lato, 3);
 
-    double dt = 1e-6;
+    double dt = 1e-9;
 
     char configurazione;
     cout << "Vuoi che le particelle interagiscano tra loro (y/n)? ";
@@ -175,15 +173,10 @@ int main()
     return 0;
 }
 
-double distribuzioneCoordinate (double x)
-{
-    return 1;
-}
-
 double distribuzioneMetropolis (double x, string oggetto)
 {
     if (oggetto=="posizione") return 1;
-    else if (oggetto=="theta") return sin(x);
+    else if (oggetto=="theta") return sin(x * M_PI);
     else if (oggetto=="phi") return 1;
     else return 1;
 }
@@ -367,7 +360,7 @@ void motoVelocityVerlet(int N, double dt, double lato, double** posizioni, doubl
 
         for (int k = 0; k < 3; k++)
         {
-            velocityFuture[i][k] = velocity[i][k] + 1/(2 * massa) * (forzaLJ[k] + forzaFuturaLJ[k]) * dt; // + O(dt^2)
+            velocityFuture[i][k] = velocity[i][k] + 1/(2 * massa) * (forzaLJ[k] + forzaFuturaLJ[k]) * dt; // + O(dt^3)
 
             //se la particella ha superato i bordi del cubo, la velocità è invertita
             if ((posizioniFuture[i][k] <= 0) or (posizioniFuture[i][k] >= lato)) velocityFuture[i][k] = - velocityFuture[i][k];
